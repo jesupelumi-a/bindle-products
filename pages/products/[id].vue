@@ -1,10 +1,22 @@
 <script setup>
 const route = useRoute()
+const router = useRouter()
 
 const { data: product, pending, error } = await useAsyncData(`product-${route.params.id}`, async () => {
   const response = await fetch(`https://dummyjson.com/products/${route.params.id}`)
   return response.json()
 })
+
+const previousPage = route.query.from || '1';
+
+const handleBack = () => {
+  router.push({
+    path: '/',
+    query: {
+      page: previousPage
+    }
+  })
+}
 
 useSeoMeta({
   title: () => product.value ? `${product.value.title} - Bindle Products` : "Loading...",
@@ -22,14 +34,15 @@ useSeoMeta({
       <div class="h-1 w-24 bg-blue-500 mx-auto mt-2"></div>
     </div>
 
-    <NuxtLink to="/" class="inline-flex items-center text-blue-500 hover:text-blue-600 mb-6 transition-colors">
+    <button @click="handleBack"
+      class="inline-flex items-center text-blue-500 hover:text-blue-600 mb-6 transition-colors">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd"
           d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
           clip-rule="evenodd" />
       </svg>
       Back to Products
-    </NuxtLink>
+    </button>
 
     <div v-if="error" class="text-red-500 text-center py-8">
       Error loading product. Please try again later.

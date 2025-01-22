@@ -2,7 +2,11 @@
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 
 const ITEMS_PER_PAGE = 20
-const currentPage = ref(1)
+const route = useRoute()
+const router = useRouter()
+
+const currentPage = ref(Number(route.query.page) || 1)
+
 const queryClient = useQueryClient()
 
 const fetchProducts = async (page) => {
@@ -17,12 +21,25 @@ const { data, isLoading, error } = useQuery({
   keepPreviousData: true
 })
 
+watch(currentPage, (newPage) => {
+  router.push({
+    query: {
+      ...route.query,
+      page: newPage.toString()
+    }
+  })
+})
 
 const preloadPage = async (page) => {
   await queryClient.prefetchQuery({
     queryKey: ['products', page],
     queryFn: () => fetchProducts(page),
   })
+}
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const handleMouseEnter = (page) => {
@@ -55,8 +72,12 @@ const handleMouseEnter = (page) => {
 
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <NuxtLink v-for="product in data.products" :key="product.id" :to="`/products/${product.id}`"
-        class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+      <NuxtLink v-for="product in data.products" :key="product.id" :to="{
+        path: `/products/${product.id}`,
+        query: {
+          from: currentPage.toString()
+        }
+      }" class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
         <img :src="product.thumbnail" :alt="product.title" class="w-full h-48 object-cover rounded mb-4" />
         <h2 class="text-lg font-semibold">{{ product.title }}</h2>
         <p class="text-gray-600">${{ product.price }}</p>
@@ -65,7 +86,7 @@ const handleMouseEnter = (page) => {
 
     <div v-if="data" class="flex justify-center mt-8 space-x-2">
       <button v-for="page in Math.ceil((data.total ?? 1) / ITEMS_PER_PAGE)" :key="page"
-        @mouseenter="handleMouseEnter(page)" @click="currentPage = page" :class="[
+        @mouseenter="handleMouseEnter(page)" @click="handlePageChange(page)" :class="[
           'px-4 py-2 rounded transition-colors',
           currentPage === page ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
         ]">
